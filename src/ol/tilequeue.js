@@ -55,9 +55,22 @@ ol.TileQueue = function(tilePriorityFunction, tileChangeCallback) {
    */
   this.tilesLoading_ = 0;
 
+  this.maxTotalLoading_ = 16;
+
+  this.maxNewLoads_ = 16;
+
 };
 goog.inherits(ol.TileQueue, ol.structs.PriorityQueue);
 
+
+ol.TileQueue.prototype.enqueue = function(element) {
+  ol.TileQueue.base(this, 'enqueue', element);
+  //Here we kick off the loading piece
+  if (this.loadTimeout_) {
+    clearTimeout(this.loadTimeout_);
+  }
+  this.loadTimeout_ = setTimeout(this.loadMoreTiles_.bind(this), 0);
+}
 
 /**
  * @return {number} Number of tiles loading.
@@ -81,22 +94,43 @@ ol.TileQueue.prototype.handleTileChange = function(event) {
     --this.tilesLoading_;
     this.tileChangeCallback_();
   }
+  this.loadMoreTiles_();
 };
 
 
 /**
- * @param {number} maxTotalLoading Maximum number tiles to load simultaneously.
- * @param {number} maxNewLoads Maximum number of new tiles to load.
+ * Dequeues tiles until the queue is saturated.
+ */
+ol.TileQueue.prototype.loadMoreTiles_ = function() {
+  var maxTotalLoading = this.maxTotalLoading_;
+  var maxNewLoads = this.maxNewLoads_;
+  var newLoads = 0;
+  var tile, tileStruct;
+  while (this.tilesLoading_ < maxTotalLoading && newLoads < maxNewLoads &&
+         this.getCount() > 0) {
+    tileStruct = this.dequeue();
+    var priority = this.priorityFunction_(tileStruct);
+    if (priority != ol.structs.PriorityQueue.DROP) {
+      tile = tileStruct[0];
+      if (tile.getState() === ol.TileState.IDLE) {
+        goog.events.listen(tile, goog.events.EventType.CHANGE,
+            this.handleTileChange, false, this);
+        tile.load();
+        ++this.tilesLoading_;
+        ++newLoads;
+      }
+    }
+  }
+};
+
+
+/**
+ * Maintains the current interface but is now used to set loading thresholds
+ * @param  {number} maxTotalLoading max number of concurrent loading tiles
+ * @param  {number} maxNewLoads     max new tiles to add at each pass
  */
 ol.TileQueue.prototype.loadMoreTiles = function(maxTotalLoading, maxNewLoads) {
-  var newLoads = Math.min(
-      maxTotalLoading - this.getTilesLoading(), maxNewLoads, this.getCount());
-  var i, tile;
-  for (i = 0; i < newLoads; ++i) {
-    tile = /** @type {ol.Tile} */ (this.dequeue()[0]);
-    goog.events.listen(tile, goog.events.EventType.CHANGE,
-        this.handleTileChange, false, this);
-    tile.load();
-  }
-  this.tilesLoading_ += newLoads;
-};
+  this.maxTotalLoading_ = maxTotalLoading;
+  this.maxNewLoads_ = maxNewLoads;
+  this.loadMoreTiles_();
+}

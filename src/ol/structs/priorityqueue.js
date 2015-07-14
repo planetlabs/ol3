@@ -24,7 +24,7 @@ ol.structs.PriorityQueue = function(priorityFunction, keyFunction) {
 
   /**
    * @type {function(T): number}
-   * @private
+   * @protected
    */
   this.priorityFunction_ = priorityFunction;
 
