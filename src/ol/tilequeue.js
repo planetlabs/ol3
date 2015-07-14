@@ -66,7 +66,10 @@ goog.inherits(ol.TileQueue, ol.structs.PriorityQueue);
 ol.TileQueue.prototype.enqueue = function(element) {
   ol.TileQueue.base(this, 'enqueue', element);
   //Here we kick off the loading piece
-  this.loadMoreTiles_();
+  if (this.loadTimeout_) {
+    clearTimeout(this.loadTimeout_);
+  }
+  this.loadTimeout_ = setTimeout(this.loadMoreTiles_.bind(this), 0);
 }
 
 /**
