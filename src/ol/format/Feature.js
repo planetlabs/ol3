@@ -218,3 +218,58 @@ export function transformWithOptions(geometry, write, opt_options) {
   }
   return transformed;
 }
+
+/**
+ * Takes a geometry that has been wrapped and unwraps it.
+ *
+ * A wrapped geometry has no longitude values that are greater
+ * than 180 or less than -180.  In addition, any segment in a
+ * wrapped geometry that spans more than 180 degrees is assumed
+ * to cross the antimeridian.
+ *
+ * An unwrapped geometry may have longitude values that are
+ * greater than 180 or less than -180.
+ *
+ * Example 1:
+ * input: LINESTRING(179 0, -179 0)
+ * output: LINESTRING(179 0, 181 0)
+ *
+ * Example 2:
+ * input:  LINESTRING(-179 0, 179 0)
+ * output: LINESTRING(-179 0, -181 0)
+ *
+ *
+ * @param {ol.geom.Geometry} geometry The wrapped geometry.
+ * @param {ol.proj.Projection} to The target geometry projection.
+ */
+export function unwrap(geometry, to) {}
+
+/**
+ * Takes an unwrapped geometry and wraps it.
+ *
+ * An unwrapped geometry may have longitude values that are
+ * greater than 180 or less than -180.  Any segment in an
+ * unwrapped geometry that spans more than 180 degrees will
+ * have a point inserted at the prime meridian.
+ *
+ * A wrapped geometry has no longitude values that are greater
+ * than 180 or less than -180.  In addition, any segment in a
+ * wrapped geometry that spans more than 180 degrees is assumed
+ * to cross the antimeridian.
+ *
+ * Example 1:
+ * input:  LINESTRING(179 0, 181 0)
+ * output: LINESTRING(179 0, -179 0)
+ *
+ * Example 2:
+ * input:  LINESTRING(-179 0, -181 0)
+ * output: LINESTRING(-179 0, 179 0)
+ *
+ * Example 3:
+ * input:  LINESTRING(-179 0, 179 0)
+ * output: LINESTRING(-179 0, 0 0, 179 0)
+ *
+ * @param {ol.geom.Geometry} geometry The input geometry.
+ * @param {ol.proj.Projection} from The source geometry projection.
+ */
+export function wrap(geometry, from) {}
