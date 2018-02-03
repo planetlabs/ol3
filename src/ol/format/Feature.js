@@ -2,6 +2,7 @@
  * @module ol/format/Feature
  */
 import Geometry from '../geom/Geometry.js';
+import GeometryType from '../geom/GeometryType.js';
 import {assign} from '../obj.js';
 import {get as getProjection, equivalent as equivalentProjection, transformExtent} from '../proj.js';
 
@@ -177,6 +178,15 @@ export function transformWithOptions(geometry, write, opt_options) {
     getProjection(opt_options.featureProjection) : null;
   const dataProjection = opt_options ?
     getProjection(opt_options.dataProjection) : null;
+
+  if (opt_options && opt_options.wrap) {
+    if (write) {
+      geometry = wrap(geometry, featureProjection);
+    } else {
+      geometry = unwrap(geometry, dataProjection);
+    }
+  }
+
   /**
    * @type {ol.geom.Geometry|ol.Extent}
    */
@@ -184,6 +194,7 @@ export function transformWithOptions(geometry, write, opt_options) {
   if (featureProjection && dataProjection &&
       !equivalentProjection(featureProjection, dataProjection)) {
     if (geometry instanceof Geometry) {
+
       transformed = (write ? geometry.clone() : geometry).transform(
         write ? featureProjection : dataProjection,
         write ? dataProjection : featureProjection);
@@ -241,8 +252,11 @@ export function transformWithOptions(geometry, write, opt_options) {
  *
  * @param {ol.geom.Geometry} geometry The wrapped geometry.
  * @param {ol.proj.Projection} to The target geometry projection.
+ * @return {ol.geom.Geometry} The unwrapped geometry.
  */
-export function unwrap(geometry, to) {}
+export function unwrap(geometry, to) {
+  return geometry;
+}
 
 /**
  * Takes an unwrapped geometry and wraps it.
@@ -271,5 +285,15 @@ export function unwrap(geometry, to) {}
  *
  * @param {ol.geom.Geometry} geometry The input geometry.
  * @param {ol.proj.Projection} from The source geometry projection.
+ * @return {ol.geom.Geometry} The wrapped geometry.
  */
-export function wrap(geometry, from) {}
+export function wrap(geometry, from) {
+  switch (geometry.getType()) {
+    case GeometryType.POINT:
+      // TODO: Magic
+      break;
+    default:
+      throw new Error('Unexpected Geometry Type');
+  }
+  return geometry;
+}

@@ -587,7 +587,13 @@ describe('ol.format.GeoJSON', function() {
     });
   });
 
-  describe('#writeGeometry', function() {
+  describe.only('#writeGeometry', function() {
+    it('works when wrapping points', function() {
+      const point = new Point([181, 0]);
+      const geojson = format.writeGeometry(point, {wrap: true});
+      const json = JSON.parse(geojson);
+      expect(json.coordinates).to.eql([-179, 0]);
+    });
 
     it('encodes point', function() {
       const point = new Point([10, 20]);
