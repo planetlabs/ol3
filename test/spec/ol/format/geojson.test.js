@@ -605,6 +605,13 @@ describe('ol.format.GeoJSON', function() {
       expect(jsonC.coordinates).to.eql([-179, 0]);
     });
 
+    it('works when wrapping line strings', () => {
+      const lineString = new LineString([[179, 0], [181, 0], [-181, 0]]);
+      const geojson = format.writeGeometry(lineString, {wrap: true});
+      const json = JSON.parse(geojson);
+      expect(json.coordinates).to.eql([[179, 0], [-179, 0], [179, 0]]);
+    });
+
     it('encodes point', function() {
       const point = new Point([10, 20]);
       const geojson = format.writeGeometry(point);

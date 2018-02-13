@@ -259,6 +259,37 @@ export function unwrap(geometry, to) {
 }
 
 /**
+ * Takes a coordinate and wraps it.
+ *
+ * A wrapped coordinate has no longitude values that are greater
+ * than 180 or less than -180.
+ *
+ * An unwrapped coordinate may have longitude values that are
+ * greater than 180 or less than -180.
+ *
+ * Example 1:
+ * input: [181, 0]
+ * output: [-179, 0]
+ *
+ * Example 2:
+ * input: [-181, 0]
+ * output: [179, 0]
+ *
+ * @param {ol.Coordinate} coordinate The coordinate.
+ * @return {ol.geom.Geometry} The unwrapped geometry.
+ */
+export function wrapped(coordinate) {
+  const longitude = coordinate[0] % 360;
+
+  if (longitude > 180) {
+    return [longitude - 360, coordinate[1]];
+  } else if (longitude < -179) {
+    return [longitude + 360, coordinate[1]];
+  }
+  return coordinate;
+}
+
+/**
  * Takes an unwrapped geometry and wraps it.
  *
  * An unwrapped geometry may have longitude values that are
@@ -289,21 +320,22 @@ export function unwrap(geometry, to) {
  */
 export function wrap(geometry, from) {
   switch (geometry.getType()) {
-    case GeometryType.POINT:
-
+    case GeometryType.POINT: {
       const coordinates = geometry.getCoordinates();
-      const longitude = coordinates[0] % 360;
-
-      if (longitude > 180) {
-        geometry.setCoordinates([longitude - 360, coordinates[1]]);
-      } else if (longitude < -179) {
-        geometry.setCoordinates([longitude + 360, coordinates[1]]);
-      }
+      geometry.setCoordinates(wrapped(coordinates));
 
       return geometry;
+    }
+    case GeometryType.LINE_STRING: {
+      const coordinates = geometry.getCoordinates().slice();
+      const wrappedCoordinates = coordinates.map(coordinate => {
+        return wrapped(coordinate);
+      });
 
-    case GeometryType.LINE_STRING:
-      break;
+      geometry.setCoordinates(wrappedCoordinates);
+
+      return geometry;
+    }
     case GeometryType.LINEAR_RING:
       break;
     case GeometryType.POLYGON:
