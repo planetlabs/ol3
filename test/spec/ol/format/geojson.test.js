@@ -589,10 +589,20 @@ describe('ol.format.GeoJSON', function() {
 
   describe.only('#writeGeometry', function() {
     it('works when wrapping points', function() {
-      const point = new Point([181, 0]);
-      const geojson = format.writeGeometry(point, {wrap: true});
-      const json = JSON.parse(geojson);
-      expect(json.coordinates).to.eql([-179, 0]);
+      const pointA = new Point([181, 0]);
+      const geojsonA = format.writeGeometry(pointA, {wrap: true});
+      const jsonA = JSON.parse(geojsonA);
+      expect(jsonA.coordinates).to.eql([-179, 0]);
+
+      const pointB = new Point([-181, 0]);
+      const geojsonB = format.writeGeometry(pointB, {wrap: true});
+      const jsonB = JSON.parse(geojsonB);
+      expect(jsonB.coordinates).to.eql([179, 0]);
+
+      const pointC = new Point([541, 0]);
+      const geojsonC = format.writeGeometry(pointC, {wrap: true});
+      const jsonC = JSON.parse(geojsonC);
+      expect(jsonC.coordinates).to.eql([-179, 0]);
     });
 
     it('encodes point', function() {

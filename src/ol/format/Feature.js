@@ -290,7 +290,33 @@ export function unwrap(geometry, to) {
 export function wrap(geometry, from) {
   switch (geometry.getType()) {
     case GeometryType.POINT:
-      // TODO: Magic
+
+      const coordinates = geometry.getCoordinates();
+      const longitude = coordinates[0] % 360;
+
+      if (longitude > 180) {
+        geometry.setCoordinates([longitude - 360, coordinates[1]]);
+      } else if (longitude < -179) {
+        geometry.setCoordinates([longitude + 360, coordinates[1]]);
+      }
+
+      return geometry;
+
+    case GeometryType.LINE_STRING:
+      break;
+    case GeometryType.LINEAR_RING:
+      break;
+    case GeometryType.POLYGON:
+      break;
+    case GeometryType.MULTI_POINT:
+      break;
+    case GeometryType.MULTI_LINE_STRING:
+      break;
+    case GeometryType.MULTI_POLYGON:
+      break;
+    case GeometryType.GEOMETRY_COLLECTION:
+      break;
+    case GeometryType.CIRCLE:
       break;
     default:
       throw new Error('Unexpected Geometry Type');
