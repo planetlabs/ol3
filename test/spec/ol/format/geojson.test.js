@@ -5,7 +5,9 @@ import Circle from '../../../../src/ol/geom/Circle.js';
 import GeometryCollection from '../../../../src/ol/geom/GeometryCollection.js';
 import LineString from '../../../../src/ol/geom/LineString.js';
 import LinearRing from '../../../../src/ol/geom/LinearRing.js';
+import MultiLineString from '../../../../src/ol/geom/MultiLineString.js';
 import MultiPolygon from '../../../../src/ol/geom/MultiPolygon.js';
+import MultiPoint from '../../../../src/ol/geom/MultiPoint.js';
 import Point from '../../../../src/ol/geom/Point.js';
 import Polygon from '../../../../src/ol/geom/Polygon.js';
 import {fromLonLat, get as getProjection, toLonLat, transform} from '../../../../src/ol/proj.js';
@@ -605,6 +607,17 @@ describe('ol.format.GeoJSON', function() {
       expect(jsonC.coordinates).to.eql([-179, 0]);
     });
 
+    it('works with wrapping multi-points', () => {
+      const multiPoint = new MultiPoint([
+        [181, 0], [-181, 0], [541, 0], [179, 0]
+      ]);
+      const geojson = format.writeGeometry(multiPoint, {wrap: true});
+      const json = JSON.parse(geojson);
+      expect(json.coordinates).to.eql([
+        [-179, 0], [179, 0], [-179, 0], [179, 0]
+      ]);
+    });
+
     it('works when wrapping line strings', () => {
       const lineString = new LineString([
         [234, 39], [118, 39], [118, 8], [246, 8], [245, -14], [112, -12]
@@ -613,6 +626,19 @@ describe('ol.format.GeoJSON', function() {
       const json = JSON.parse(geojson);
       expect(json.coordinates).to.eql([
         [-126, 39], [118, 39], [118, 8], [-114, 8], [-115, -14], [112, -12]
+      ]);
+    });
+
+    it('works with wrapping multi-line strings', () => {
+      const multiLineString = new MultiLineString([
+        [[0, 0], [181, 0]],
+        [[-181, 0], [0, 0]]
+      ]);
+      const geojson = format.writeGeometry(multiLineString, {wrap: true});
+      const json = JSON.parse(geojson);
+      expect(json.coordinates).to.eql([
+        [[0, 0], [-179, 0]],
+        [[179, 0], [0, 0]]
       ]);
     });
 
@@ -643,9 +669,6 @@ describe('ol.format.GeoJSON', function() {
       ]]);
     });
 
-    it('works with wrapping multi-points', () => {});
-
-    it('works with wrapping multi-line strings', () => {});
 
     it('works with wrapping multi-polygons', () => {});
 

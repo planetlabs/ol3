@@ -276,6 +276,7 @@ export function unwrap(geometry, to) {
  * output: [179, 0]
  *
  * @param {ol.Coordinate} coordinate The coordinate.
+ * @param {ol.Projection} from The projection. <= TODO: Is this correct?
  * @return {ol.geom.Geometry} The unwrapped geometry.
  */
 export function wrapped(coordinate, from) {
@@ -332,6 +333,17 @@ export function wrap(geometry, from) {
       return geometry;
     }
 
+    case GeometryType.MULTI_POINT: {
+      // TODO: DRY up this code
+      const coordinates = geometry.getCoordinates().slice();
+
+      const wrappedCoordinates = coordinates.map(coordinate =>
+        wrapped(coordinate));
+
+      geometry.setCoordinates(wrappedCoordinates);
+      return geometry;
+    }
+
     case GeometryType.LINE_STRING: {
       const coordinates = geometry.getCoordinates().slice();
 
@@ -348,6 +360,15 @@ export function wrap(geometry, from) {
       return geometry;
     }
 
+    case GeometryType.MULTI_LINE_STRING: {
+      const lineStrings = geometry.getLineStrings();
+      const wrapped = lineStrings.map(lineString =>
+        wrap(lineString).getCoordinates());
+
+      geometry.setCoordinates(wrapped);
+      return geometry;
+    }
+
     case GeometryType.LINEAR_RING: {
       const coordinates = geometry.getCoordinates().slice();
       const wrappedCoordinates = coordinates.map(coordinate =>
@@ -356,7 +377,6 @@ export function wrap(geometry, from) {
       // NOTE: Will probably have to check segments here for > 180°
 
       geometry.setCoordinates(wrappedCoordinates);
-
       return geometry;
     }
 
@@ -366,14 +386,6 @@ export function wrap(geometry, from) {
 
       geometry.setCoordinates(wrapped);
 
-      return geometry;
-    }
-
-    case GeometryType.MULTI_POINT: {
-      return geometry;
-    }
-
-    case GeometryType.MULTI_LINE_STRING: {
       return geometry;
     }
 
