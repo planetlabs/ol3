@@ -401,10 +401,12 @@ export function wrap(geometry, from) {
     }
 
     case GeometryType.GEOMETRY_COLLECTION: {
+      // We get this for "free"
       return geometry;
     }
 
     case GeometryType.CIRCLE: {
+      // TODO: Circle?
       return geometry;
     }
 

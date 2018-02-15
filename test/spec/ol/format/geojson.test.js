@@ -708,7 +708,17 @@ describe('ol.format.GeoJSON', function() {
       ]]);
     });
 
-    it('works with wrapping geometry collections', () => {});
+    it('works with wrapping geometry collections', () => {
+      const geomCollection = new GeometryCollection([
+        new Point([-181, 20]),
+        new LineString([[380, 40], [-200, 60]])
+      ]);
+      const geojson = format.writeGeometry(geomCollection, {wrap: true});
+      const json = JSON.parse(geojson);
+
+      expect(json.geometries[0].coordinates).to.eql([179, 20]);
+      expect(json.geometries[1].coordinates).to.eql([[20, 40], [160, 60]]);
+    });
 
     it('works with wrapping circles', () => {});
 
