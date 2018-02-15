@@ -606,11 +606,52 @@ describe('ol.format.GeoJSON', function() {
     });
 
     it('works when wrapping line strings', () => {
-      const lineString = new LineString([[179, 0], [181, 0], [-181, 0]]);
+      const lineString = new LineString([
+        [234, 39], [118, 39], [118, 8], [246, 8], [245, -14], [112, -12]
+      ]);
       const geojson = format.writeGeometry(lineString, {wrap: true});
       const json = JSON.parse(geojson);
-      expect(json.coordinates).to.eql([[179, 0], [-179, 0], [179, 0]]);
+      expect(json.coordinates).to.eql([
+        [-126, 39], [118, 39], [118, 8], [-114, 8], [-115, -14], [112, -12]
+      ]);
     });
+
+    it('works with wrapping linear rings', () => {
+      // const linearRing = new LinearRing([
+      //   [234, 39], [118, 39], [118, 8], [246, 8], [245, -14], [112, -12]
+      // ]);
+      // const geojson = format.writeGeometry(linearRing, {wrap: true});
+      // const json = JSON.parse(geojson);
+      // expect(json.coordinates).to.eql([
+      //   [-126, 39], [118, 39], [118, 8], [-114, 8], [-115, -14], [112, -12]
+      // ]);
+    });
+
+    it('works with wrapping polygons', () => {
+      const ring = [
+        [160, 10],
+        [200, 10],
+        [200, -10],
+        [160, -10],
+        [160, 10]
+      ];
+      const polygon = new Polygon([ring]);
+      const geojson = format.writeGeometry(polygon, {wrap: true});
+      const json = JSON.parse(geojson);
+      expect(json.coordinates).to.eql([[
+        [160, 10], [-160, 10], [-160, -10], [160, -10], [160, 10]
+      ]]);
+    });
+
+    it('works with wrapping multi-points', () => {});
+
+    it('works with wrapping multi-line strings', () => {});
+
+    it('works with wrapping multi-polygons', () => {});
+
+    it('works with wrapping geometry collections', () => {});
+
+    it('works with wrapping circles', () => {});
 
     it('encodes point', function() {
       const point = new Point([10, 20]);

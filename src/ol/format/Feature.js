@@ -278,7 +278,7 @@ export function unwrap(geometry, to) {
  * @param {ol.Coordinate} coordinate The coordinate.
  * @return {ol.geom.Geometry} The unwrapped geometry.
  */
-export function wrapped(coordinate) {
+export function wrapped(coordinate, from) {
   const longitude = coordinate[0] % 360;
 
   if (longitude > 180) {
@@ -319,39 +319,77 @@ export function wrapped(coordinate) {
  * @return {ol.geom.Geometry} The wrapped geometry.
  */
 export function wrap(geometry, from) {
+  // Need to get the extent of the world from "FROM" instead of assuming geographic coordinates
+  // and 360
+  // extent exports a function called "getWidth"
+
   switch (geometry.getType()) {
     case GeometryType.POINT: {
+
       const coordinates = geometry.getCoordinates();
       geometry.setCoordinates(wrapped(coordinates));
 
       return geometry;
     }
+
     case GeometryType.LINE_STRING: {
       const coordinates = geometry.getCoordinates().slice();
-      const wrappedCoordinates = coordinates.map(coordinate => {
-        return wrapped(coordinate);
+
+      // TODO: could call wrap here too
+      const wrappedCoordinates = coordinates.map(coordinate =>
+        wrapped(coordinate));
+
+      geometry.setCoordinates(wrappedCoordinates);
+
+      geometry.forEachSegment(function(start, end) {
+        // TODO: Check for segments that are > 180°
       });
+
+      return geometry;
+    }
+
+    case GeometryType.LINEAR_RING: {
+      const coordinates = geometry.getCoordinates().slice();
+      const wrappedCoordinates = coordinates.map(coordinate =>
+        wrapped(coordinate));
+
+      // NOTE: Will probably have to check segments here for > 180°
 
       geometry.setCoordinates(wrappedCoordinates);
 
       return geometry;
     }
-    case GeometryType.LINEAR_RING:
-      break;
-    case GeometryType.POLYGON:
-      break;
-    case GeometryType.MULTI_POINT:
-      break;
-    case GeometryType.MULTI_LINE_STRING:
-      break;
-    case GeometryType.MULTI_POLYGON:
-      break;
-    case GeometryType.GEOMETRY_COLLECTION:
-      break;
-    case GeometryType.CIRCLE:
-      break;
+
+    case GeometryType.POLYGON: {
+      const rings = geometry.getLinearRings();
+      const wrapped = rings.map(ring => wrap(ring).getCoordinates());
+
+      geometry.setCoordinates(wrapped);
+
+      return geometry;
+    }
+
+    case GeometryType.MULTI_POINT: {
+      return geometry;
+    }
+
+    case GeometryType.MULTI_LINE_STRING: {
+      return geometry;
+    }
+
+    case GeometryType.MULTI_POLYGON: {
+      return geometry;
+    }
+
+    case GeometryType.GEOMETRY_COLLECTION: {
+      return geometry;
+    }
+
+    case GeometryType.CIRCLE: {
+      return geometry;
+    }
+
     default:
       throw new Error('Unexpected Geometry Type');
   }
-  return geometry;
 }
