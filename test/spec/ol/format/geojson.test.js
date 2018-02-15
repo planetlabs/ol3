@@ -670,7 +670,43 @@ describe('ol.format.GeoJSON', function() {
     });
 
 
-    it('works with wrapping multi-polygons', () => {});
+    it('works with wrapping multi-polygons', () => {
+      const ring1 = [
+        [160, 10],
+        [200, 10],
+        [200, -10],
+        [160, -10],
+        [160, 10]
+      ];
+
+      const ring2 = [
+        [-160, 10],
+        [-200, 10],
+        [-360, -10],
+        [-460, -10],
+        [-160, 10]
+      ];
+
+      const multiPolygon = new MultiPolygon([[ring1], [ring2]]);
+      const geojson = format.writeGeometry(multiPolygon, {wrap: true});
+      const json = JSON.parse(geojson);
+
+      expect(json.coordinates[0]).to.eql([[
+        [160, 10],
+        [-160, 10],
+        [-160, -10],
+        [160, -10],
+        [160, 10]
+      ]]);
+
+      expect(json.coordinates[1]).to.eql([[
+        [-160, 10],
+        [160, 10],
+        [0, -10],
+        [-100, -10],
+        [-160, 10]
+      ]]);
+    });
 
     it('works with wrapping geometry collections', () => {});
 

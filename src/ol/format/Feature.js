@@ -287,7 +287,8 @@ export function wrapped(coordinate, from) {
   } else if (longitude < -179) {
     return [longitude + 360, coordinate[1]];
   }
-  return coordinate;
+
+  return [longitude, coordinate[1]];
 }
 
 /**
@@ -377,6 +378,7 @@ export function wrap(geometry, from) {
       // NOTE: Will probably have to check segments here for > 180°
 
       geometry.setCoordinates(wrappedCoordinates);
+
       return geometry;
     }
 
@@ -390,6 +392,11 @@ export function wrap(geometry, from) {
     }
 
     case GeometryType.MULTI_POLYGON: {
+      const polygons = geometry.getPolygons();
+      const wrapped = polygons.map(polygon => wrap(polygon).getCoordinates());
+
+      geometry.setCoordinates(wrapped);
+
       return geometry;
     }
 
