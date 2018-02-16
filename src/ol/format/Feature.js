@@ -4,7 +4,12 @@
 import Geometry from '../geom/Geometry.js';
 import GeometryType from '../geom/GeometryType.js';
 import {assign} from '../obj.js';
-import {get as getProjection, equivalent as equivalentProjection, transformExtent} from '../proj.js';
+import {getWidth} from '../extent.js';
+import {
+  get as getProjection,
+  equivalent as equivalentProjection,
+  transformExtent
+} from '../proj.js';
 
 /**
  * @classdesc
@@ -255,7 +260,7 @@ export function transformWithOptions(geometry, write, opt_options) {
  * @return {ol.geom.Geometry} The unwrapped geometry.
  */
 export function unwrap(geometry, to) {
-  return geometry;
+
 }
 
 /**
@@ -276,16 +281,17 @@ export function unwrap(geometry, to) {
  * output: [179, 0]
  *
  * @param {ol.Coordinate} coordinate The coordinate.
- * @param {ol.Projection} from The projection. <= TODO: Is this correct?
+ * @param {ol.proj.Projection} projection The projection.
  * @return {ol.geom.Geometry} The unwrapped geometry.
  */
-export function wrapped(coordinate, from) {
-  const longitude = coordinate[0] % 360;
+export function wrapped(coordinate, hemisphere) {
+  const circumference = hemisphere * 2;
+  const longitude = coordinate[0] % circumference;
 
-  if (longitude > 180) {
-    return [longitude - 360, coordinate[1]];
-  } else if (longitude < -179) {
-    return [longitude + 360, coordinate[1]];
+  if (longitude > hemisphere) {
+    return [longitude - circumference, coordinate[1]];
+  } else if (longitude < -hemisphere) {
+    return [longitude + circumference, coordinate[1]];
   }
 
   return [longitude, coordinate[1]];
@@ -317,46 +323,78 @@ export function wrapped(coordinate, from) {
  * output: LINESTRING(-179 0, 0 0, 179 0)
  *
  * @param {ol.geom.Geometry} geometry The input geometry.
- * @param {ol.proj.Projection} from The source geometry projection.
+ * @param {ol.proj.Projection} projection The source geometry projection.
  * @return {ol.geom.Geometry} The wrapped geometry.
  */
-export function wrap(geometry, from) {
-  // Need to get the extent of the world from "FROM" instead of assuming geographic coordinates
-  // and 360
-  // extent exports a function called "getWidth"
+export function wrap(geometry, projection) {
+  let hemisphere = 180;
+
+  if (projection) {
+    const worldExtent = projection.getWorldExtent();
+    if (!worldExtent) {
+      // if projection does not span the world, throw / warn, wrap makes no sense
+      return geometry;
+    }
+    hemisphere = getWidth(worldExtent) / 2;
+  }
 
   switch (geometry.getType()) {
     case GeometryType.POINT: {
-
       const coordinates = geometry.getCoordinates();
-      geometry.setCoordinates(wrapped(coordinates));
+      geometry.setCoordinates(wrapped(coordinates, hemisphere));
 
       return geometry;
     }
 
-    case GeometryType.MULTI_POINT: {
-      // TODO: DRY up this code
-      const coordinates = geometry.getCoordinates().slice();
+    case GeometryType.MULTI_POINT:
+    case GeometryType.LINE_STRING:
+    case GeometryType.LINEAR_RING: {
+      const coordinates = geometry.getCoordinates();
+      const type = geometry.getType();
+
+      if (type !== GeometryType.MULTI_POINT) {
+        // Determine where to insert points along the slope of the ring in order
+        // to preserve the intent of the geometry for segments > 180°.
+        const length = coordinates.length;
+
+        let i = 0;
+        while (i < length - 1) {
+          // Get two adjacent coordinates
+          const A = coordinates[i];
+          const B = coordinates[i + 1];
+
+          // Find the distance / longitudinal difference
+          const span = B[0] - A[0];
+
+          // If the difference is > thm half the world we need to insert a point
+          // along the slope at the prime meridian (or halfway?)
+          if (Math.abs(span) > hemisphere) {
+            // find slope
+
+            const direction = span > 0 ? 1 : -1;
+
+            // NOTE: Should this be absolute?
+            const rise = B[1] - A[1];
+            const slope = rise / span;
+            const hemispheres = Math.floor(span / hemisphere);
+
+            for (let j = 0; j < hemispheres; j++) {
+              const dx = (j + 1) * hemisphere * direction;
+              const newX = A[0] + dx;
+              const newY = A[1] + slope * dx;
+
+              coordinates.splice(i + 1, 0, [newX, newY]);
+
+              i++;
+            }
+          }
+        }
+      }
 
       const wrappedCoordinates = coordinates.map(coordinate =>
-        wrapped(coordinate));
+        wrapped(coordinate, projection));
 
       geometry.setCoordinates(wrappedCoordinates);
-      return geometry;
-    }
-
-    case GeometryType.LINE_STRING: {
-      const coordinates = geometry.getCoordinates().slice();
-
-      // TODO: could call wrap here too
-      const wrappedCoordinates = coordinates.map(coordinate =>
-        wrapped(coordinate));
-
-      geometry.setCoordinates(wrappedCoordinates);
-
-      geometry.forEachSegment(function(start, end) {
-        // TODO: Check for segments that are > 180°
-      });
 
       return geometry;
     }
@@ -364,27 +402,17 @@ export function wrap(geometry, from) {
     case GeometryType.MULTI_LINE_STRING: {
       const lineStrings = geometry.getLineStrings();
       const wrapped = lineStrings.map(lineString =>
-        wrap(lineString).getCoordinates());
+        wrap(lineString, projection).getCoordinates());
 
       geometry.setCoordinates(wrapped);
       return geometry;
     }
 
-    case GeometryType.LINEAR_RING: {
-      const coordinates = geometry.getCoordinates().slice();
-      const wrappedCoordinates = coordinates.map(coordinate =>
-        wrapped(coordinate));
-
-      // NOTE: Will probably have to check segments here for > 180°
-
-      geometry.setCoordinates(wrappedCoordinates);
-
-      return geometry;
-    }
 
     case GeometryType.POLYGON: {
       const rings = geometry.getLinearRings();
-      const wrapped = rings.map(ring => wrap(ring).getCoordinates());
+      const wrapped = rings.map(ring =>
+        wrap(ring, projection).getCoordinates());
 
       geometry.setCoordinates(wrapped);
 
@@ -393,7 +421,8 @@ export function wrap(geometry, from) {
 
     case GeometryType.MULTI_POLYGON: {
       const polygons = geometry.getPolygons();
-      const wrapped = polygons.map(polygon => wrap(polygon).getCoordinates());
+      const wrapped = polygons.map(polygon =>
+        wrap(polygon, projection).getCoordinates());
 
       geometry.setCoordinates(wrapped);
 
@@ -402,11 +431,16 @@ export function wrap(geometry, from) {
 
     case GeometryType.GEOMETRY_COLLECTION: {
       // We get this for "free"
+      // we should throw
       return geometry;
     }
 
     case GeometryType.CIRCLE: {
       // TODO: Circle?
+      // should we throw here too? (no circles in geojson)
+      // wrap(getCenter()) or something
+      // start out by throwing, becuase someone shoudl be callign polygon fromCirle()
+      // before we get here
       return geometry;
     }
 

@@ -642,17 +642,6 @@ describe('ol.format.GeoJSON', function() {
       ]);
     });
 
-    it('works with wrapping linear rings', () => {
-      // const linearRing = new LinearRing([
-      //   [234, 39], [118, 39], [118, 8], [246, 8], [245, -14], [112, -12]
-      // ]);
-      // const geojson = format.writeGeometry(linearRing, {wrap: true});
-      // const json = JSON.parse(geojson);
-      // expect(json.coordinates).to.eql([
-      //   [-126, 39], [118, 39], [118, 8], [-114, 8], [-115, -14], [112, -12]
-      // ]);
-    });
-
     it('works with wrapping polygons', () => {
       const ring = [
         [160, 10],
@@ -661,6 +650,7 @@ describe('ol.format.GeoJSON', function() {
         [160, -10],
         [160, 10]
       ];
+      // let's put another ring in here
       const polygon = new Polygon([ring]);
       const geojson = format.writeGeometry(polygon, {wrap: true});
       const json = JSON.parse(geojson);
@@ -668,7 +658,6 @@ describe('ol.format.GeoJSON', function() {
         [160, 10], [-160, 10], [-160, -10], [160, -10], [160, 10]
       ]]);
     });
-
 
     it('works with wrapping multi-polygons', () => {
       const ring1 = [
@@ -719,8 +708,6 @@ describe('ol.format.GeoJSON', function() {
       expect(json.geometries[0].coordinates).to.eql([179, 20]);
       expect(json.geometries[1].coordinates).to.eql([[20, 40], [160, 60]]);
     });
-
-    it('works with wrapping circles', () => {});
 
     it('encodes point', function() {
       const point = new Point([10, 20]);
