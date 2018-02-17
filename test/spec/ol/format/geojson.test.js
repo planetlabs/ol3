@@ -637,8 +637,8 @@ describe('ol.format.GeoJSON', function() {
       const geojson = format.writeGeometry(multiLineString, {wrap: true});
       const json = JSON.parse(geojson);
       expect(json.coordinates).to.eql([
-        [[0, 0], [-179, 0]],
-        [[179, 0], [0, 0]]
+        [[0, 0], [180, 0], [-179, 0]],
+        [[179, 0], [-1, 0], [0, 0]]
       ]);
     });
 
@@ -693,6 +693,7 @@ describe('ol.format.GeoJSON', function() {
         [160, 10],
         [0, -10],
         [-100, -10],
+        [80, 2],
         [-160, 10]
       ]]);
     });
@@ -700,13 +701,35 @@ describe('ol.format.GeoJSON', function() {
     it('works with wrapping geometry collections', () => {
       const geomCollection = new GeometryCollection([
         new Point([-181, 20]),
-        new LineString([[380, 40], [-200, 60]])
+        new LineString([[-405, 60], [147, -42]])
       ]);
       const geojson = format.writeGeometry(geomCollection, {wrap: true});
       const json = JSON.parse(geojson);
 
       expect(json.geometries[0].coordinates).to.eql([179, 20]);
-      expect(json.geometries[1].coordinates).to.eql([[20, 40], [160, 60]]);
+      expect(json.geometries[1].coordinates).to.eql([
+        [-45, 60],
+        [135, 26.73913043478261],
+        [-45, -6.521739130434781],
+        [135, -39.78260869565217],
+        [147, -42]
+      ]);
+    });
+
+    it('preserves hemisphere-spanning geometries when wrapping', () => {
+      // NOTE: I we may have an edge case with the exactly anti-meridian
+      // const lineString = new LineString([[0, 0], [-360, 0]]);
+      const lineString = new LineString([[0, 0], [-410, 0]]);
+      const geojson = format.writeGeometry(lineString, {wrap: true});
+      const json = JSON.parse(geojson);
+
+      expect(json.coordinates).to.eql([
+        [0, 0],
+        [-180, 0],
+        [0, 0],
+        [-180, 0],
+        [-50, 0]
+      ]);
     });
 
     it('encodes point', function() {

@@ -260,7 +260,7 @@ export function transformWithOptions(geometry, write, opt_options) {
  * @return {ol.geom.Geometry} The unwrapped geometry.
  */
 export function unwrap(geometry, to) {
-
+  return geometry;
 }
 
 /**
@@ -281,7 +281,7 @@ export function unwrap(geometry, to) {
  * output: [179, 0]
  *
  * @param {ol.Coordinate} coordinate The coordinate.
- * @param {ol.proj.Projection} projection The projection.
+ * @param {number} hemisphere A half world.
  * @return {ol.geom.Geometry} The unwrapped geometry.
  */
 export function wrapped(coordinate, hemisphere) {
@@ -358,6 +358,8 @@ export function wrap(geometry, projection) {
         const length = coordinates.length;
 
         let i = 0;
+
+
         while (i < length - 1) {
           // Get two adjacent coordinates
           const A = coordinates[i];
@@ -366,33 +368,30 @@ export function wrap(geometry, projection) {
           // Find the distance / longitudinal difference
           const span = B[0] - A[0];
 
-          // If the difference is > thm half the world we need to insert a point
-          // along the slope at the prime meridian (or halfway?)
           if (Math.abs(span) > hemisphere) {
-            // find slope
-
             const direction = span > 0 ? 1 : -1;
-
-            // NOTE: Should this be absolute?
             const rise = B[1] - A[1];
             const slope = rise / span;
-            const hemispheres = Math.floor(span / hemisphere);
+            const hemispheres = Math.abs(Math.floor(span / hemisphere));
 
+            // do we have an edge case where we get 2 hemisphere's because we
+            // have exactly 2?
             for (let j = 0; j < hemispheres; j++) {
               const dx = (j + 1) * hemisphere * direction;
               const newX = A[0] + dx;
               const newY = A[1] + slope * dx;
 
               coordinates.splice(i + 1, 0, [newX, newY]);
-
               i++;
             }
+          } else {
+            i++;
           }
         }
       }
 
       const wrappedCoordinates = coordinates.map(coordinate =>
-        wrapped(coordinate, projection));
+        wrapped(coordinate, hemisphere));
 
       geometry.setCoordinates(wrappedCoordinates);
 
