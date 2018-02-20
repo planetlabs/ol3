@@ -368,19 +368,20 @@ export function wrap(geometry, projection) {
           // Find the distance / longitudinal difference
           const span = B[0] - A[0];
 
+          // When a segment is wider than half the world
           if (Math.abs(span) > hemisphere) {
             const direction = span > 0 ? 1 : -1;
             const rise = B[1] - A[1];
             const slope = rise / span;
             const hemispheres = Math.ceil(Math.abs(span / hemisphere)) - 1;
 
-            // do we have an edge case where we get 2 hemisphere's because we
-            // have exactly 2?
+            // For every hemisphere
             for (let j = 0; j < hemispheres; j++) {
               const dx = (j + 1) * hemisphere * direction;
               const newX = A[0] + dx;
               const newY = A[1] + slope * dx;
 
+              // Insert a new coordinate
               coordinates.splice(i + 1, 0, [newX, newY]);
               i++;
             }
