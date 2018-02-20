@@ -643,59 +643,39 @@ describe('ol.format.GeoJSON', function() {
     });
 
     it('works with wrapping polygons', () => {
-      const ring = [
-        [160, 10],
-        [200, 10],
-        [200, -10],
-        [160, -10],
-        [160, 10]
+      const coordinates = [
+        [[160, 10], [200, 10], [200, -10], [160, -10], [160, 10]],
+        [[181, 5], [190, 7], [186, 6], [181, 5]]
       ];
-      // let's put another ring in here
-      const polygon = new Polygon([ring]);
+
+      const wrappedCoordinates = [
+        [[160, 10], [-160, 10], [-160, -10], [160, -10], [160, 10]],
+        [[-179, 5], [-170, 7], [-174, 6], [-179, 5]]
+      ];
+
+      const polygon = new Polygon(coordinates);
       const geojson = format.writeGeometry(polygon, {wrap: true});
       const json = JSON.parse(geojson);
-      expect(json.coordinates).to.eql([[
-        [160, 10], [-160, 10], [-160, -10], [160, -10], [160, 10]
-      ]]);
+      expect(json.coordinates).to.eql(wrappedCoordinates);
     });
 
     it('works with wrapping multi-polygons', () => {
-      const ring1 = [
-        [160, 10],
-        [200, 10],
-        [200, -10],
-        [160, -10],
-        [160, 10]
+      const coordinates = [
+        [[[160, 10], [200, 10], [200, -10], [160, -10], [160, 10]]],
+        [[[-160, 10], [-200, 10], [-360, -10], [-460, -10], [-160, 10]]]
       ];
 
-      const ring2 = [
-        [-160, 10],
-        [-200, 10],
-        [-360, -10],
-        [-460, -10],
-        [-160, 10]
-      ];
-
-      const multiPolygon = new MultiPolygon([[ring1], [ring2]]);
+      const multiPolygon = new MultiPolygon(coordinates);
       const geojson = format.writeGeometry(multiPolygon, {wrap: true});
       const json = JSON.parse(geojson);
 
-      expect(json.coordinates[0]).to.eql([[
-        [160, 10],
-        [-160, 10],
-        [-160, -10],
-        [160, -10],
-        [160, 10]
-      ]]);
+      expect(json.coordinates[0]).to.eql([
+        [[160, 10], [-160, 10], [-160, -10], [160, -10], [160, 10]]
+      ]);
 
-      expect(json.coordinates[1]).to.eql([[
-        [-160, 10],
-        [160, 10],
-        [0, -10],
-        [-100, -10],
-        [80, 2],
-        [-160, 10]
-      ]]);
+      expect(json.coordinates[1]).to.eql([
+        [[-160, 10], [160, 10], [0, -10], [-100, -10], [80, 2], [-160, 10]]
+      ]);
     });
 
     it('works with wrapping geometry collections', () => {
@@ -717,8 +697,6 @@ describe('ol.format.GeoJSON', function() {
     });
 
     it('preserves hemisphere-spanning geometries when wrapping', () => {
-      // NOTE: I we may have an edge case with the exactly anti-meridian
-      // const lineString = new LineString([[0, 0], [-360, 0]]);
       const lineString = new LineString([[0, 0], [-410, 0]]);
       const geojson = format.writeGeometry(lineString, {wrap: true});
       const json = JSON.parse(geojson);
@@ -727,8 +705,17 @@ describe('ol.format.GeoJSON', function() {
         [0, 0],
         [-180, 0],
         [0, 0],
-        [-180, 0],
         [-50, 0]
+      ]);
+
+      const circumference = new LineString([[0, 0], [-360, 0]]);
+      const geojson360 = format.writeGeometry(circumference, {wrap: true});
+      const json360 = JSON.parse(geojson360);
+
+      expect(json360.coordinates).to.eql([
+        [0, 0],
+        [-180, 0],
+        [0, 0]
       ]);
     });
 
