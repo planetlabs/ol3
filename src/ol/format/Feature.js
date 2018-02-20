@@ -372,7 +372,7 @@ export function wrap(geometry, projection) {
             const direction = span > 0 ? 1 : -1;
             const rise = B[1] - A[1];
             const slope = rise / span;
-            const hemispheres = Math.abs(Math.floor(span / hemisphere));
+            const hemispheres = Math.ceil(Math.abs(span / hemisphere)) - 1;
 
             // do we have an edge case where we get 2 hemisphere's because we
             // have exactly 2?
